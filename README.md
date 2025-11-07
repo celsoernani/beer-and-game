@@ -60,3 +60,10 @@ npm run dev
 ```
 
 Abra [http://localhost:3000](http://localhost:3000) para visualizar o app.
+
+### Banco de dados local (Prisma + SQLite)
+1. Copie `.env.example` para `.env` e ajuste o caminho do banco se necessário.
+2. Gere o cliente após instalar as dependências: `npm run prisma:generate`.
+3. Crie ou atualize o schema no SQLite com `npm run prisma:migrate -- --name init` (ou `npx prisma db push` durante o protótipo).
+
+O arquivo `prisma/schema.prisma` define os modelos principais (`Player`, `Match`, `Team`, `Event`) e a tabela de junção `TeamPlayer`, mantendo compatibilidade com a futura migração para PostgreSQL e NestJS.
