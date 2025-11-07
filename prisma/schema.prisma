@@ -1,0 +1,100 @@
+// Prisma schema for Beer and Game MVP
+// Defines core domain models using SQLite for local development.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum MatchStatus {
+  SCHEDULED
+  IN_PROGRESS
+  FINISHED
+  CANCELLED
+}
+
+model Player {
+  id            String         @id @default(cuid())
+  name          String
+  skillRating   Int?
+  positionPref  String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  teamAssignments TeamPlayer[]
+  events           Event[]
+}
+
+model Match {
+  id          String       @id @default(cuid())
+  name        String
+  status      MatchStatus  @default(SCHEDULED)
+  startTime   DateTime?
+  location    String?
+  tournament  String?
+  notes       String?
+  config      Json?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  teams  Team[]
+  events Event[]
+}
+
+model Team {
+  id        String   @id @default(cuid())
+  matchId   String
+  name      String
+  color     String?
+  isHome    Boolean?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  match          Match        @relation(fields: [matchId], references: [id])
+  players        TeamPlayer[]
+  events         Event[]
+
+  @@index([matchId])
+}
+
+model TeamPlayer {
+  id            String   @id @default(cuid())
+  teamId        String
+  playerId      String
+  role          String?
+  starting      Boolean  @default(false)
+  minutesPlayed Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  team   Team   @relation(fields: [teamId], references: [id])
+  player Player @relation(fields: [playerId], references: [id])
+
+  @@unique([teamId, playerId])
+  @@index([playerId])
+}
+
+model Event {
+  id          String      @id @default(cuid())
+  matchId     String
+  teamId      String?
+  playerId    String?
+  type        String
+  occurredAt  DateTime    @default(now())
+  matchMinute Int?
+  payload     Json?
+  createdBy   String?
+  createdAt   DateTime    @default(now())
+
+  match  Match  @relation(fields: [matchId], references: [id])
+  team   Team?  @relation(fields: [teamId], references: [id])
+  player Player? @relation(fields: [playerId], references: [id])
+
+  @@index([matchId, occurredAt])
+  @@index([teamId])
+  @@index([playerId])
+}
