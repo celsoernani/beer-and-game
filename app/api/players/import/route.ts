@@ -1,6 +1,8 @@
 import prisma from '@/lib/prisma';
 import { validateImportRecord } from '../validators';
 
+export const dynamic = 'force-dynamic';
+
 interface CsvParseResult {
   records: Record<string, string>[];
   errors: string[];
@@ -70,7 +72,7 @@ export async function POST(request: Request) {
 }
 
 function parseCsv(text: string): CsvParseResult {
-  const rows = splitCsv(text);
+  const rows = splitCsv(stripBom(text));
 
   if (rows === null) {
     return { records: [], errors: ['CSV contains unmatched quote characters.'] };
@@ -82,7 +84,7 @@ function parseCsv(text: string): CsvParseResult {
 
   const [headerRow, ...dataRows] = rows;
   const headers = headerRow.map((header) => header.trim());
-  const normalizedHeaders = headers.map((header) => header.toLowerCase());
+  const normalizedHeaders = headers.map(normalizeHeader);
 
   if (!normalizedHeaders.includes('name')) {
     return { records: [], errors: ['CSV header must include a "name" column.'] };
@@ -180,4 +182,16 @@ function splitCsv(text: string): string[][] | null {
   }
 
   return rows.filter((row) => row.length > 0);
+}
+
+function normalizeHeader(header: string): string {
+  return header.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function stripBom(text: string): string {
+  if (text.charCodeAt(0) === 0xfeff) {
+    return text.slice(1);
+  }
+
+  return text;
 }

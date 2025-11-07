@@ -62,8 +62,12 @@ export function validatePlayerUpdate(payload: unknown): PlayerUpdateInput {
 
 export function validateImportRecord(record: Record<string, string>): PlayerCreateInput {
   const name = parseName(record['name']);
-  const skillRating = parseSkillRating(record['skillrating'], { allowEmpty: true });
-  const positionPref = parsePositionPref(record['positionpref'], { allowEmpty: true });
+  const skillRating = parseSkillRating(getRecordValue(record, ['skillrating', 'rating']), {
+    allowEmpty: true,
+  });
+  const positionPref = parsePositionPref(getRecordValue(record, ['positionpref', 'position']), {
+    allowEmpty: true,
+  });
 
   const data: PlayerCreateInput = { name };
 
@@ -162,4 +166,14 @@ function parsePositionPref(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
+}
+
+function getRecordValue(record: Record<string, string>, keys: string[]): string | undefined {
+  for (const key of keys) {
+    if (Object.prototype.hasOwnProperty.call(record, key)) {
+      return record[key];
+    }
+  }
+
+  return undefined;
 }

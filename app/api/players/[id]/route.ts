@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { validatePlayerUpdate } from '../validators';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
   const player = await prisma.player.findUnique({ where: { id: params.id } });
 

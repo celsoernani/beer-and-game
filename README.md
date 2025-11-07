@@ -74,6 +74,6 @@ O arquivo `prisma/schema.prisma` define os modelos principais (`Player`, `Match`
 - `GET /api/players/:id`: consulta um jogador específico.
 - `PUT /api/players/:id`: atualiza nome, rating ou posição preferida. Campos ausentes não são alterados; enviar `null` remove o valor opcional.
 - `DELETE /api/players/:id`: remove o registro.
-- `POST /api/players/import`: recebe `multipart/form-data` com arquivo `file` (`text/csv`). O cabeçalho precisa de `name` e pode incluir `skillRating`, `positionPref`. Linhas inválidas retornam erros detalhados informando o número da linha.
+- `POST /api/players/import`: recebe `multipart/form-data` com arquivo `file` (`text/csv`). O cabeçalho precisa de `name` e pode incluir `skillRating`, `positionPref` ou variantes (`skill_rating`, `position_pref`). Linhas inválidas retornam erros detalhados informando o número da linha.
 
 Essas rotas operam diretamente sobre o banco SQLite via Prisma, preparando o fluxo de jogadores descrito no roadmap.
