@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Beer and Game – Plano Arquitetural
 
-## Getting Started
+## Visão Geral
+Aplicativo para registrar partidas de campeonato em tempo real em um único dispositivo, oferecendo importação de jogadores, montagem de partidas, registro de eventos e geração de relatórios. A primeira versão roda inteiramente sobre o backend do Next.js com banco local, e já prepara o terreno para migração futura para um backend NestJS.
 
-First, run the development server:
+## Stack Atual (MVP)
+- **Frontend e Backend**: Next.js mais recente (App Router) com TypeScript.
+- **Persistência local**: SQLite através de ORM (ex.: Prisma) operando no servidor Next.js.
+- **Estado cliente**: React Query/Zustand conforme necessidade de cache offline.
+- **Infraestrutura**: App rodando em um único dispositivo; sincronização em nuvem não é necessária nesta fase.
 
+## Evolução Planejada
+- **Backend dedicado**: Migração para NestJS (Node.js/TypeScript) mantendo modelos e serviços compatíveis.
+- **Banco de dados**: PostgreSQL hospedado + filas gerenciadas na AWS (ex.: SQS) para processamento assíncrono quando houver múltiplos dispositivos.
+- **Integrações futuras**: Serviços de IA para balanceamento de times e sugestões automáticas.
+
+## Domínio e Atores
+- **Organizador**: administra jogadores, agenda partidas, acessa relatórios.
+- **Anotador**: registra eventos em tempo real no dispositivo.
+- **Jogador**: consulta estatísticas e histórico (via portal público futuro).
+
+## Módulos (Fase Atual)
+1. **Core**
+   - Modelos: `Player`, `Match`, `Team`, `Event`.
+   - Serviços: `MatchService`, `BalanceService`, `StatsService`, `ImportService`.
+2. **Interfaces (Next API Routes)**
+   - `POST /api/players/import`
+   - `GET/POST /api/players`
+   - `GET/POST /api/matches`
+   - `POST /api/matches/{id}/events`
+   - `GET /api/matches/{id}/timeline`
+   - `GET /api/stats/player/{id}`
+3. **UI**
+   - `app/(dashboard)/matches` – lista e filtros.
+   - `app/(dashboard)/matches/[id]` – tela principal com cronômetro e timeline.
+   - `app/(dashboard)/players` – CRUD e importação.
+   - `app/(public)/stats/players/[id]` – estatísticas por jogador (fase futura).
+
+## Considerações Técnicas
+- **Cronômetro**: controlado localmente pelo dispositivo; sem necessidade de sincronização via websocket.
+- **Atalhos de teclado**: configuráveis por usuário, armazenados localmente.
+- **Auditoria**: log mínimo dos eventos registrados para permitir desfazer ações.
+
+## Migração para NestJS
+- Manter definição dos modelos e serviços em módulos independentes reutilizáveis.
+- Planejar separação da camada de persistência em repositórios para troca de implementações (SQLite → PostgreSQL).
+- Preparar contrato de APIs para fácil portabilidade dos endpoints das rotas do Next para controllers NestJS.
+
+## Roadmap
+1. Importação CSV e gestão de jogadores no backend Next.js.
+2. CRUD de partidas com cronômetro manual e registro de eventos locais.
+3. Relatórios exportáveis (CSV/Excel).
+4. Migração gradual para NestJS + banco remoto, incluindo adoção de filas AWS para orquestração quando houver múltiplos dispositivos.
+5. Integração IA para balanceamento e sugestões de substituição.
+
+## Desenvolvimento Local
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abra [http://localhost:3000](http://localhost:3000) para visualizar o app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Banco de dados local (Prisma + SQLite)
+1. Copie `.env.example` para `.env` e ajuste o caminho do banco se necessário.
+2. Gere o cliente após instalar as dependências: `npm run prisma:generate`.
+3. Crie ou atualize o schema no SQLite com `npm run prisma:migrate -- --name init` (ou `npx prisma db push` durante o protótipo).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+O arquivo `prisma/schema.prisma` define os modelos principais (`Player`, `Match`, `Team`, `Event`) e a tabela de junção `TeamPlayer`, mantendo compatibilidade com a futura migração para PostgreSQL e NestJS.
 
-## Learn More
+### API de Jogadores (MVP)
+- `GET /api/players`: lista jogadores com suporte a filtros `search`, `take` e `skip`. Retorna paginação básica (`total`, `take`, `skip`).
+- `POST /api/players`: cria um jogador recebendo JSON `{ "name": string, "skillRating"?: number, "positionPref"?: string }`.
+- `GET /api/players/:id`: consulta um jogador específico.
+- `PUT /api/players/:id`: atualiza nome, rating ou posição preferida. Campos ausentes não são alterados; enviar `null` remove o valor opcional.
+- `DELETE /api/players/:id`: remove o registro.
+- `POST /api/players/import`: recebe `multipart/form-data` com arquivo `file` (`text/csv`). O cabeçalho precisa de `name` e pode incluir `skillRating`, `positionPref` ou variantes (`skill_rating`, `position_pref`). Linhas inválidas retornam erros detalhados informando o número da linha.
 
-To learn more about Next.js, take a look at the following resources:
+Essas rotas operam diretamente sobre o banco SQLite via Prisma, preparando o fluxo de jogadores descrito no roadmap.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### API de Partidas, Times e Eventos
+- `GET /api/matches`: lista partidas com filtros `search`, `status`, `take` e `skip`. Inclui os times associados para permitir o pré-jogo.
+- `POST /api/matches`: cria uma partida com campos opcionais (`status`, `startTime`, `location`, `tournament`, `notes`, `config`) e permite cadastrar times iniciais via `teams: [{ name, color?, isHome? }]`.
+- `GET /api/matches/:id`: traz detalhes completos da partida, incluindo times, escalações (`teamPlayers`) e eventos ordenados cronologicamente.
+- `PUT /api/matches/:id`: atualiza qualquer campo da partida e sincroniza os times enviados. Para remover todos os times, envie `teams: []`; para atualizar ou criar, utilize `{ id?, name, color?, isHome? }`.
+- `DELETE /api/matches/:id`: exclui a partida e remove times, escalações e eventos relacionados em uma transação única.
+- `POST /api/matches/:id/events`: registra eventos do jogo (gols, cartões, comandos do cronômetro etc.) garantindo que o time e o jogador informados pertençam à partida. Quando apenas o jogador é enviado, o backend infere o time associado automaticamente.
+- `GET /api/matches/:id/timeline`: retorna a linha do tempo ordenada (por `occurredAt` e `createdAt`) com enriquecimento básico de time e jogador.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Essas rotas completam o núcleo do MVP: o cronômetro manual é representado via campos de status (`SCHEDULED`, `IN_PROGRESS`, `FINISHED`, `CANCELLED`) e `startTime`, permitindo que o cliente controle início/pausa/fim enquanto mantém auditoria com os eventos gerados.
