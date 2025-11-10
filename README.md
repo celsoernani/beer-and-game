@@ -67,13 +67,3 @@ Abra [http://localhost:3000](http://localhost:3000) para visualizar o app.
 3. Crie ou atualize o schema no SQLite com `npm run prisma:migrate -- --name init` (ou `npx prisma db push` durante o protótipo).
 
 O arquivo `prisma/schema.prisma` define os modelos principais (`Player`, `Match`, `Team`, `Event`) e a tabela de junção `TeamPlayer`, mantendo compatibilidade com a futura migração para PostgreSQL e NestJS.
-
-### API de Jogadores (MVP)
-- `GET /api/players`: lista jogadores com suporte a filtros `search`, `take` e `skip`. Retorna paginação básica (`total`, `take`, `skip`).
-- `POST /api/players`: cria um jogador recebendo JSON `{ "name": string, "skillRating"?: number, "positionPref"?: string }`.
-- `GET /api/players/:id`: consulta um jogador específico.
-- `PUT /api/players/:id`: atualiza nome, rating ou posição preferida. Campos ausentes não são alterados; enviar `null` remove o valor opcional.
-- `DELETE /api/players/:id`: remove o registro.
-- `POST /api/players/import`: recebe `multipart/form-data` com arquivo `file` (`text/csv`). O cabeçalho precisa de `name` e pode incluir `skillRating`, `positionPref` ou variantes (`skill_rating`, `position_pref`). Linhas inválidas retornam erros detalhados informando o número da linha.
-
-Essas rotas operam diretamente sobre o banco SQLite via Prisma, preparando o fluxo de jogadores descrito no roadmap.
